@@ -52,12 +52,25 @@ class MovingAverageCrossStrategy(AbstractStrategy):
             self.signals = self.signals.append(signal)
 
             if self.invested:
-                past = self.signals[self.signals['date'] > self.entry_time]
-                if not past.empty:
-                    went_up = past[past['close'] > past['bb_middleband']]
-                    if len(went_up) < 1 and len(past) > 25:
+                # exit_position = self.expired_not_profit()
+                if not exit_position and len(self.signals) > 2:
+                    two_ago = self.signals.iloc[-2]
+                    one_ago = self.signals.iloc[-1]
+
+                    exit_position = (
+                            (one_ago['sma'] < one_ago['bb_middleband']) and
+                            (two_ago['sma'] > two_ago['bb_middleband'])
+                            # and len(went_up) < 1
+                    )
+                    if exit_position:
+                        print('SMA exit')
+                if not exit_position:
+                    entry = self.signals.loc[self.signals['date'] >= self.entry_time]
+                    # if entry['close'][0] < signal['trailing_stop'][0] and signal['adx'][0] > 10:
+                    if signal['close'][0] < entry['trailing_stop'].max() and signal['adx'][0] > 10:
                         exit_position = True
-                        print('Exit position')
+                        print('Trailing exit - ' + str(signal['adx'][0]))
+
 
             # Trading signals based on moving average cross
             if signal['buy'][0] == 1 and not self.invested:
@@ -81,6 +94,15 @@ class MovingAverageCrossStrategy(AbstractStrategy):
                 self.events_queue.put(signal_event)
                 self.invested = False
 
+    def expired_not_profit(self):
+        past = self.signals[self.signals['date'] > self.entry_time]
+        if not past.empty:
+            went_up = past[past['close'] > past['bb_middleband']]
+            if len(went_up) < 1 and len(past) > 25:
+                exit_position = True
+                print('Exit position')
+        return exit_position
+
 
 def run(config, testing, tickers, filename):
     # Backtest information
@@ -102,7 +124,7 @@ def run(config, testing, tickers, filename):
         config, strategy, tickers,
         initial_equity, start_date, end_date,
         events_queue, title=title,
-        benchmark=tickers[1],
+        benchmark=tickers[0],
     )
     results = backtest.start_trading(testing=testing)
     return results

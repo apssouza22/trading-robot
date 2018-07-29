@@ -210,12 +210,19 @@ class YahooDailyCsvBarPriceHandler(AbstractBarPriceHandler):
         self.signals = tecnical.get_historical_signals(prices)
         self.signals['buy'].fillna(0, inplace=True)
         self.signals['sell'].fillna(0, inplace=True)
+        self.signals['sma'].fillna(0, inplace=True)
         self.signals.set_index('date', drop=False, inplace=True)
+
         signals = self.signals[self.signals['symbol'] == 'AAPL']
-        signals['bb_lowerband'].plot()
-        signals['bb_middleband'].plot()
-        signals['bb_upperband'].plot()
-        signals['close'].plot()
+        # signals['bb_lowerband'].plot()
+        # signals['bb_middleband'].plot()
+        # signals['bb_upperband'].plot()
+        # signals['close'].plot()
+        # signals['sma'].plot(label='sma 50')
+        # signals['adx'].plot()
+
+        # signals['ema5'].plot(label='ema 5')
+        # signals['ema50'].plot(label='ema 50')
         # buys = signals[signals['buy'] ==1]
         # plt.show()
         print('')

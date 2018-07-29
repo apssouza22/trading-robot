@@ -4,7 +4,6 @@ from enum import Enum
 import talib.abstract as ta
 from pandas import DataFrame
 
-
 import strategy.tecnical.indicators as qtpylib
 from .indicator_helpers import fishers_inverse
 
@@ -35,7 +34,7 @@ class TecnicalAnalysisStrategy:
         # ------------------------------------
 
         # ADX - trend and the strong of the trend, no direction
-        # dataframe['adx'] = ta.ADX(dataframe)
+        dataframe['adx'] = ta.ADX(dataframe)
 
         # Awesome oscillator - distance between emas, it indicates if the price is going down or up
         # dataframe['ao'] = qtpylib.awesome_oscillator(dataframe)
@@ -107,19 +106,19 @@ class TecnicalAnalysisStrategy:
 
         # # EMA - Exponential Moving Average
         # dataframe['ema3'] = ta.EMA(dataframe, timeperiod=3)
-        # dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
-        # dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
-        # dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
+        dataframe['ema5'] = ta.EMA(dataframe, timeperiod=5)
+        dataframe['ema10'] = ta.EMA(dataframe, timeperiod=10)
+        dataframe['ema50'] = ta.EMA(dataframe, timeperiod=50)
         # dataframe['ema100'] = ta.EMA(dataframe, timeperiod=100)
         #
         # # SAR Parabol
-        # dataframe['sar'] = ta.SAR(dataframe)
+        dataframe['sar'] = ta.SAR(dataframe)
         #
         # # SMA - Simple Moving Average
-        # dataframe['sma'] = ta.SMA(dataframe, timeperiod=40)
+        dataframe['sma'] = ta.SMA(dataframe, timeperiod=5)
         #
         # # TEMA - Triple Exponential Moving Average
-        # dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
+        dataframe['tema'] = ta.TEMA(dataframe, timeperiod=9)
         #
         # # Cycle Indicator
         # # ------------------------------------
@@ -185,6 +184,8 @@ class TecnicalAnalysisStrategy:
         # dataframe['ha_high'] = heikinashi['high']
         # dataframe['ha_low'] = heikinashi['low']
 
+        dataframe['trailing_stop'] = dataframe['close'] * 0.90
+
         return dataframe
 
     def populate_buy_trend(self, dataframe: DataFrame) -> DataFrame:
@@ -204,6 +205,10 @@ class TecnicalAnalysisStrategy:
                             (dataframe['close'] > dataframe['bb_lowerband']) &
                             (shiftted['close'] < shiftted['bb_lowerband'])
                     )
+                    | (
+                            (dataframe['sma'] > dataframe['bb_middleband'])
+                            & (shiftted['sma'] <= shiftted['bb_middleband'])
+                    )
             ), 'buy'] = 1
 
         return dataframe
@@ -217,13 +222,14 @@ class TecnicalAnalysisStrategy:
         shiftted = dataframe.shift(2)
         dataframe.loc[
             (
-                    (dataframe['close'] < dataframe['bb_middleband'])
-                    & (shiftted['close'] > shiftted['bb_middleband'])
+                    (dataframe['close'] < dataframe['bb_middleband']) &
+                    (shiftted['close'] > shiftted['bb_middleband'])
             )
             | (
                     (dataframe['close'] < dataframe['bb_lowerband']) &
                     (shiftted['close'] > shiftted['bb_lowerband'])
-            ), 'sell'] = 1
+            )
+            , 'sell'] = 1
         return dataframe
 
     def analyze_ticker(self, ticker_history: list) -> DataFrame:
